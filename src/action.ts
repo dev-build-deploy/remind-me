@@ -90,6 +90,7 @@ export async function run(): Promise<void> {
 
     files.forEach(async file => {
       for await (const comment of commentIt.extractComments(file.filename)) {
+        core.info(JSON.stringify(comment, null, 2))
         const issue = {
           ...github.context.repo,
           title: "",
@@ -111,11 +112,13 @@ export async function run(): Promise<void> {
               break;
           }
         }
-        const octokit = github.getOctokit(core.getInput("token"));
-        await octokit.rest.issues.create({
-          ...github.context.repo,
-          ...issue
-        })
+        if (issue.title.length > 0) {
+          const octokit = github.getOctokit(core.getInput("token"));
+          await octokit.rest.issues.create({
+            ...github.context.repo,
+            ...issue
+          })
+        }
       }
     })
   } catch (ex) {

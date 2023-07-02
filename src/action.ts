@@ -40,19 +40,18 @@ type Token = {
 
 function generateToken(line: string, from: number): Token | undefined {
   const tokens = {
-    todo: new RegExp(`^.{${from}} ${tokenRefs.todo}:`, "i"),
-    body: new RegExp(`^.{${from}} ${tokenRefs.body}:`, "i"),
-    labels: new RegExp(`^.{${from}} ${tokenRefs.labels}:`, "i"),
-    assignees: new RegExp(`^.{${from}} ${tokenRefs.assignees}:`, "i"),
-    milestones: new RegExp(`^.{${from}} ${tokenRefs.milestones}:`, "i"),
+    todo: new RegExp(`${tokenRefs.todo}:`, "i"),
+    body: new RegExp(`${tokenRefs.body}:`, "i"),
+    labels: new RegExp(`${tokenRefs.labels}:`, "i"),
+    assignees: new RegExp(`${tokenRefs.assignees}:`, "i"),
+    milestones: new RegExp(`${tokenRefs.milestones}:`, "i"),
   }
-
   const tokenKeys = Object.keys(tokens) as (keyof typeof tokens)[];
   for (let i = 0; i < tokenKeys.length; i++) {
     const match = tokens[tokenKeys[i]].exec(line);
     if (match === null) continue;
 
-    return { start: from + 1, end: line.indexOf(":") + 1, type: Object.keys(tokenRefs)[i] as keyof typeof tokenRefs };
+    return { start: from, end: line.indexOf(":") + 1, type: Object.keys(tokenRefs)[i] as keyof typeof tokenRefs };
   }
 }
 
@@ -61,7 +60,7 @@ export function* extractData(comment: commentIt.IComment) {
   let currentData = "";
 
   for (const line of comment.contents) {
-    const match = generateToken(line.value, comment.format.start?.length ?? line.column.start);
+    const match = generateToken(line.value, line.value.indexOf("@"));
     if (match) {
       if (currentToken) {
         yield {type: currentToken.type, data: currentData }

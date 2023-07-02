@@ -1,3 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: 2023 Kevin de Jong <monkaii@hotmail.com>
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
 import { IComment } from "../../comment-it/src/interfaces"
 import * as action from "../src/action"
 

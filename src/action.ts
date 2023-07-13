@@ -7,6 +7,25 @@ import * as core from "@actions/core";
 import * as github from "@actions/github";
 import * as commentIt from "@dev-build-deploy/comment-it";
 import type { components as octokitComponents } from "@octokit/openapi-types";
+import { createIssue } from "./issue";
+
+type Issue = octokitComponents["schemas"]["issue"];
+
+async function listIssues(): Promise<Issue[]> {
+  const octokit = github.getOctokit(core.getInput("token"));
+  const issues: Issue[] = [];
+
+  for await (const page of octokit.paginate.iterator(octokit.rest.issues.listForRepo, {
+    ...github.context.repo,
+    labels: "TODO",
+  })) {
+    for (const issue of page.data) {
+      issues.push({ ...issue, state_reason: undefined });
+    }
+  }
+
+  return issues;
+}
 
 /**
  * Lists all files in the current Pull Request and filters out unsupported files.
@@ -46,22 +65,23 @@ type Token = {
   type: keyof typeof tokenRefs;
 };
 
+const tokenRegex = {
+  todo: new RegExp(`${tokenRefs.todo}:`, "i"),
+  body: new RegExp(`${tokenRefs.body}:`, "i"),
+  labels: new RegExp(`${tokenRefs.labels}:`, "i"),
+  assignees: new RegExp(`${tokenRefs.assignees}:`, "i"),
+  milestones: new RegExp(`${tokenRefs.milestones}:`, "i"),
+};
+
 /**
  * Generates a token from the provided line
  * @param line The line to generate a token from
  * @returns The generated token
  */
 function generateToken(line: string): Token | undefined {
-  const tokens = {
-    todo: new RegExp(`${tokenRefs.todo}:`, "i"),
-    body: new RegExp(`${tokenRefs.body}:`, "i"),
-    labels: new RegExp(`${tokenRefs.labels}:`, "i"),
-    assignees: new RegExp(`${tokenRefs.assignees}:`, "i"),
-    milestones: new RegExp(`${tokenRefs.milestones}:`, "i"),
-  };
-  const tokenKeys = Object.keys(tokens) as (keyof typeof tokens)[];
+  const tokenKeys = Object.keys(tokenRegex) as (keyof typeof tokenRegex)[];
   for (let i = 0; i < tokenKeys.length; i++) {
-    const match = tokens[tokenKeys[i]].exec(line);
+    const match = tokenRegex[tokenKeys[i]].exec(line);
     if (match === null) continue;
 
     return {
@@ -107,6 +127,7 @@ export function* extractData(comment: commentIt.IComment) {
 export async function run(): Promise<void> {
   try {
     core.info("📄 RemindMe - Track TODOs and FIXMEs as GitHub Issues");
+    const issues = await listIssues();
     const files = await getSupportedFiles();
 
     files.forEach(async file => {
@@ -115,7 +136,7 @@ export async function run(): Promise<void> {
         const issue = {
           ...github.context.repo,
           title: "",
-          body: ""
+          body: "",
         };
         /*
          * @TODO: Add support for FIXMEs
@@ -125,13 +146,17 @@ export async function run(): Promise<void> {
          */
         for (const token of extractData(comment)) {
           switch (token.type) {
-            case "todo": issue.title = token.data; break;
-            case "body": issue.body = token.data; break;
+            case "todo":
+              issue.title = token.data;
+              break;
+            case "body":
+              createIssue(file.filename, token.data);
+              break;
           }
         }
 
         if (issue.title.length > 0) {
-          core.info("Creating new issue...")
+          core.info("Creating new issue...");
           const octokit = github.getOctokit(core.getInput("token"));
           await octokit.rest.issues.create({
             ...github.context.repo,

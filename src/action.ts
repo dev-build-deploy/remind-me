@@ -1,18 +1,17 @@
 /*
  * SPDX-FileCopyrightText: 2023 Kevin de Jong <monkaii@hotmail.com>
  * SPDX-License-Identifier: GPL-3.0-or-later
-*/
+ */
 
 import * as core from "@actions/core";
 import * as github from "@actions/github";
 import * as commentIt from "@dev-build-deploy/comment-it";
 
-
 async function getSupportedFiles() {
   const octokit = github.getOctokit(core.getInput("token"));
   const { data: files } = await octokit.rest.pulls.listFiles({
     ...github.context.repo,
-    pull_number: github.context.issue.number
+    pull_number: github.context.issue.number,
   });
 
   /*
@@ -29,14 +28,14 @@ const tokenRefs = {
   body: "@body",
   labels: "@labels",
   assignees: "@assignees",
-  milestones: "@milestones"
+  milestones: "@milestones",
 } as const;
 
 type Token = {
-  start: number,
-  end: number,
-  type: keyof typeof tokenRefs
-}
+  start: number;
+  end: number;
+  type: keyof typeof tokenRefs;
+};
 
 function generateToken(line: string, from: number): Token | undefined {
   const tokens = {
@@ -45,13 +44,17 @@ function generateToken(line: string, from: number): Token | undefined {
     labels: new RegExp(`${tokenRefs.labels}:`, "i"),
     assignees: new RegExp(`${tokenRefs.assignees}:`, "i"),
     milestones: new RegExp(`${tokenRefs.milestones}:`, "i"),
-  }
+  };
   const tokenKeys = Object.keys(tokens) as (keyof typeof tokens)[];
   for (let i = 0; i < tokenKeys.length; i++) {
     const match = tokens[tokenKeys[i]].exec(line);
     if (match === null) continue;
 
-    return { start: from, end: line.indexOf(":") + 1, type: Object.keys(tokenRefs)[i] as keyof typeof tokenRefs };
+    return {
+      start: match.index,
+      end: line.indexOf(":") + 1,
+      type: Object.keys(tokenRefs)[i] as keyof typeof tokenRefs,
+    };
   }
 }
 
@@ -63,10 +66,10 @@ export function* extractData(comment: commentIt.IComment) {
     const match = generateToken(line.value, line.value.indexOf("@"));
     if (match) {
       if (currentToken) {
-        yield {type: currentToken.type, data: currentData }
+        yield { type: currentToken.type, data: currentData };
       }
 
-      currentToken = match
+      currentToken = match;
       currentData = line.value.substring(currentToken.end).trim();
     } else if (line.value.substring(currentToken?.start ?? 0).length > 0) {
       currentData += `\n${line.value.substring(currentToken?.start ?? 0)}`;
@@ -74,7 +77,7 @@ export function* extractData(comment: commentIt.IComment) {
   }
 
   if (currentToken) {
-    yield { type: currentToken.type, data: currentData }
+    yield { type: currentToken.type, data: currentData };
   }
 }
 
@@ -89,13 +92,13 @@ export async function run(): Promise<void> {
 
     files.forEach(async file => {
       for await (const comment of commentIt.extractComments(file.filename)) {
-        core.info(JSON.stringify(comment, null, 2))
+        core.info(JSON.stringify(comment, null, 2));
         const issue = {
           ...github.context.repo,
           title: "",
           body: "",
-        }
-        /* 
+        };
+        /*
          * @TODO: Add support for FIXMEs
          * @body: We need to add support for FIXME comments
          * @labels: bug
@@ -115,11 +118,11 @@ export async function run(): Promise<void> {
           const octokit = github.getOctokit(core.getInput("token"));
           await octokit.rest.issues.create({
             ...github.context.repo,
-            ...issue
-          })
+            ...issue,
+          });
         }
       }
-    })
+    });
   } catch (ex) {
     core.setFailed((ex as Error).message);
   }

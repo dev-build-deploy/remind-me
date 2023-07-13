@@ -163,7 +163,7 @@ export async function run(): Promise<void> {
           const match = getMatchingIssue(issues, file.filename, issue.title);
           if (match) {
             core.info("Updating existing issue...");
-            await octokit.rest.issues.update({ issue_number: match.id, ...github.context.repo, ...issue });
+            await octokit.rest.issues.update({ issue_number: match.number, ...github.context.repo, ...issue });
           } else {
             core.info("Creating new issue...");
             await octokit.rest.issues.create({ ...github.context.repo, ...issue });

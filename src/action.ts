@@ -7,7 +7,7 @@ import * as core from "@actions/core";
 import * as github from "@actions/github";
 import * as commentIt from "@dev-build-deploy/comment-it";
 import type { components as octokitComponents } from "@octokit/openapi-types";
-import { createIssue } from "./issue";
+import { createIssue, getMatchingIssue } from "./issue";
 
 type Issue = octokitComponents["schemas"]["issue"];
 
@@ -137,6 +137,7 @@ export async function run(): Promise<void> {
           ...github.context.repo,
           title: "",
           body: "",
+          labels: ["TODO"],
         };
         /*
          * @TODO: Add support for FIXMEs
@@ -150,18 +151,21 @@ export async function run(): Promise<void> {
               issue.title = token.data;
               break;
             case "body":
-              createIssue(file.filename, token.data);
+              issue.body = createIssue(file.filename, token.data);
               break;
           }
         }
 
         if (issue.title.length > 0) {
-          core.info("Creating new issue...");
           const octokit = github.getOctokit(core.getInput("token"));
-          await octokit.rest.issues.create({
-            ...github.context.repo,
-            ...issue,
-          });
+          const match = getMatchingIssue(issues, file.filename, issue.title);
+          if (match) {
+            core.info("Updating existing issue...");
+            await octokit.rest.issues.update({ issue_number: match.id, ...github.context.repo, ...issue });
+          } else {
+            core.info("Creating new issue...");
+            await octokit.rest.issues.create({ ...github.context.repo, ...issue });
+          }
         }
       }
     });

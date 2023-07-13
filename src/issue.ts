@@ -3,6 +3,10 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import type { components as octokitComponents } from "@octokit/openapi-types";
+
+type Issue = octokitComponents["schemas"]["issue"];
+
 const ISSUE_HEADER = `<!--
 This issue is managed by RemindMe, please do not update this description or remove the TODO label.
 @File: {{FILE}}
@@ -46,4 +50,21 @@ A standard RemindMe TODO block looks similar to:
 
 export function createIssue(file: string, body: string): string {
   return ISSUE_HEADER.replace("{{FILE}}", file).replace("{{BODY}}", body) + ISSUE_FOOTER;
+}
+
+export function isMatchingIssue(issue: Issue, file: string, title: string): boolean {
+  return (
+    issue.labels.includes("TODO") &&
+    issue.title === title &&
+    issue.body !== null &&
+    issue.body !== undefined &&
+    issue.body.includes(`@File: ${file}`)
+  );
+}
+
+export function getMatchingIssue(issues: Issue[], file: string, title: string): Issue | undefined {
+  const matches = issues.filter(issue => isMatchingIssue(issue, file, title));
+  if (matches.length > 0) return matches[0];
+
+  return;
 }

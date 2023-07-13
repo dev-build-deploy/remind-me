@@ -5,6 +5,7 @@
 
 import { IComment } from "../../comment-it/src/interfaces"
 import * as action from "../src/action"
+import { createIssue } from "../src/issue";
 
 describe("Main", () => {
   test("Extract comments from a file", async () => {
@@ -68,5 +69,85 @@ describe("Main", () => {
     ]
 
     expect([...action.extractData(comment)]).toEqual(expectations)
+  })
+
+  test("Multiline body with formatting", async () => {
+    const comment = {
+        "type": "multiline",
+        "format": {
+          "start": "<!--",
+          "end": "-->"
+        },
+        "contents": [
+          {
+            "line": 11,
+            "column": {
+              "start": 0,
+              "end": 4
+            },
+            "value": "<!--"
+          },
+          {
+            "line": 12,
+            "column": {
+              "start": 0,
+              "end": 24
+            },
+            "value": "@TODO: Validate RemindMe"
+          },
+          {
+            "line": 13,
+            "column": {
+              "start": 0,
+              "end": 91
+            },
+            "value": "@body: RemindMe is still under heavy development and is, therefore, not behaving optimally."
+          },
+          {
+            "line": 14,
+            "column": {
+              "start": 0,
+              "end": 89
+            },
+            "value": "As an example, only a few file formats are supported and it does not handle issue states;"
+          },
+          {
+            "line": 15,
+            "column": {
+              "start": 0,
+              "end": 0
+            },
+            "value": ""
+          },
+          {
+            "line": 16,
+            "column": {
+              "start": 0,
+              "end": 15
+            },
+            "value": "* Updating body"
+          },
+          {
+            "line": 17,
+            "column": {
+              "start": 0,
+              "end": 32
+            },
+            "value": "* Managing labels and milestones"
+          },
+          {
+            "line": 18,
+            "column": {
+              "start": 0,
+              "end": 3
+            },
+            "value": "-->"
+          }
+        ]
+      }  as IComment;
+
+      const data = [...action.extractData(comment)]
+      console.log(createIssue("woep", data[1].data));
+      expect(true).toBe(false)
   })
 })

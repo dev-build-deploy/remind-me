@@ -24,6 +24,8 @@ async function listIssues(): Promise<Issue[]> {
     }
   }
 
+  console.log(issues)
+
   return issues;
 }
 

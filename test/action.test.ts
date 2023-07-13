@@ -55,9 +55,18 @@ describe("Main", () => {
       ]
     } as IComment;
 
-    for (const token of action.extractData(comment)) {
-      console.log(token)
-    }
+    const expectations = [
+      {
+        type: 'todo',
+        data: 'Add support for FIXMEs\n' +
+          'This is a multiline comment\n' +
+          '   with some identation'
+      },
+      { type: 'body', data: 'We need to add support for FIXME comments' },
+      { type: 'labels', data: 'bug' },
+      { type: 'assignees', data: 'Kevin-de-Jong' }
+    ]
 
+    expect([...action.extractData(comment)]).toEqual(expectations)
   })
 })

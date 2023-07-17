@@ -10,6 +10,7 @@ import type { components as octokitComponents } from "@octokit/openapi-types";
 import { createIssue, getMatchingIssue } from "./issue";
 
 type Issue = octokitComponents["schemas"]["issue"];
+type Files = octokitComponents["schemas"]["commit"]["files"];
 
 async function listIssues(): Promise<Issue[]> {
   const octokit = github.getOctokit(core.getInput("token"));
@@ -24,8 +25,6 @@ async function listIssues(): Promise<Issue[]> {
     }
   }
 
-  console.log(issues)
-
   return issues;
 }
 
@@ -35,17 +34,19 @@ async function listIssues(): Promise<Issue[]> {
  */
 async function getSupportedFiles() {
   const octokit = github.getOctokit(core.getInput("token"));
-  const {data: commits} = await octokit.rest.repos.listCommits({
+  const { data: commits } = await octokit.rest.repos.listCommits({
     ...github.context.repo,
-    sha: github.context.payload.before
+    sha: github.context.payload.before,
   });
 
-  let allFiles: any[] = [];
+  let allFiles: Files = [];
   for (const commit of commits) {
-    const {data: details} = await octokit.rest.repos.getCommit({
+    const { data: details } = await octokit.rest.repos.getCommit({
       ...github.context.repo,
-      ref: commit.sha
-    })
+      ref: commit.sha,
+    });
+    if (details.files === undefined) continue;
+
     allFiles = allFiles.concat(details.files);
   }
 
@@ -138,8 +139,7 @@ export function* extractData(comment: commentIt.IComment) {
 export async function run(): Promise<void> {
   try {
     core.info("📄 RemindMe - Track TODOs and FIXMEs as GitHub Issues");
-    console.log(JSON.stringify(github.context.payload, null, 2))
-    
+
     const issues = await listIssues();
     const files = await getSupportedFiles();
 

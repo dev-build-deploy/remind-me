@@ -54,10 +54,7 @@ export function createIssue(file: string, body: string): string {
 
 export function isMatchingIssue(issue: Issue, file: string, title: string): boolean {
   return (
-    issue.title === title &&
-    issue.body !== null &&
-    issue.body !== undefined &&
-    issue.body.includes(`@File: ${file}\n`)
+    issue.title === title && issue.body !== null && issue.body !== undefined && issue.body.includes(`@File: ${file}\n`)
   );
 }
 

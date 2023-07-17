@@ -35,10 +35,19 @@ async function listIssues(): Promise<Issue[]> {
  */
 async function getSupportedFiles() {
   const octokit = github.getOctokit(core.getInput("token"));
-  const { data: files } = await octokit.rest.pulls.listFiles({
+  const {data: commits} = await octokit.rest.repos.listCommits({
     ...github.context.repo,
-    pull_number: github.context.issue.number,
+    sha: github.context.payload.before
   });
+
+  let allFiles: any[] = [];
+  for (const commit of commits) {
+    const {data: details} = await octokit.rest.repos.getCommit({
+      ...github.context.repo,
+      ref: commit.sha
+    })
+    allFiles = allFiles.concat(details.files);
+  }
 
   /*
    * @TODO: Extend the list of supported files
@@ -46,7 +55,7 @@ async function getSupportedFiles() {
    * @labels: enhancement
    * @assignees: Kevin-de-Jong
    */
-  return files.filter(files => files.status != "removed").filter(file => commentIt.isSupported(file.filename));
+  return allFiles.filter(files => files.status != "removed").filter(file => commentIt.isSupported(file.filename));
 }
 
 /**

@@ -129,6 +129,8 @@ export function* extractData(comment: commentIt.IComment) {
 export async function run(): Promise<void> {
   try {
     core.info("📄 RemindMe - Track TODOs and FIXMEs as GitHub Issues");
+    console.log(JSON.stringify(github.context.payload, null, 2))
+    
     const issues = await listIssues();
     const files = await getSupportedFiles();
 

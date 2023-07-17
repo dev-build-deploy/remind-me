@@ -145,7 +145,6 @@ export async function run(): Promise<void> {
 
     files.forEach(async file => {
       for await (const comment of commentIt.extractComments(file.filename)) {
-        core.info(JSON.stringify(comment, null, 2));
         const issue = {
           ...github.context.repo,
           title: "",
